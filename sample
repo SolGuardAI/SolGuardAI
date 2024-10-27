@@ -1,0 +1,80 @@
+# fake_audit.py
+# This is a simple simulation of how an audit tool like SolGuardAI might analyze a smart contract.
+
+import re
+
+# Sample "smart contract" as a string
+# (In a real scenario, this would be actual Solana smart contract code in Rust or C)
+smart_contract_code = """
+// Simple Solana smart contract example
+contract MyToken {
+    uint256 public totalSupply;
+    address public owner;
+    mapping(address => uint256) public balanceOf;
+
+    function MyToken() public {
+        owner = msg.sender;
+        totalSupply = 1000000;
+        balanceOf[msg.sender] = totalSupply;
+    }
+
+    function transfer(address _to, uint256 _value) public returns (bool success) {
+        require(balanceOf[msg.sender] >= _value);
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+        return true;
+    }
+}
+"""
+
+# Fake audit functions to check for basic security vulnerabilities
+def check_for_overflow(contract_code):
+    """Check for potential integer overflow issues."""
+    # Simple regex search for cases without safe math (e.g., unchecked arithmetic)
+    if re.search(r"\+=|\-=", contract_code):
+        return "Potential integer overflow vulnerability detected. Consider using safe math libraries."
+    return None
+
+def check_for_reentrancy(contract_code):
+    """Check for potential reentrancy vulnerabilities."""
+    # Simple check for external calls within a function
+    if re.search(r"call|send|transfer", contract_code):
+        return "Potential reentrancy vulnerability detected. Avoid external calls within functions that modify state."
+    return None
+
+def check_for_unauthorized_access(contract_code):
+    """Check if the contract restricts certain functions to the owner."""
+    # Check if there's an owner variable but no owner-only access control
+    if "owner" in contract_code and not re.search(r"require\s*\(\s*msg\.sender\s*==\s*owner", contract_code):
+        return "Unauthorized access risk: Missing access control for owner-only functions."
+    return None
+
+# Run audit checks
+def run_audit(contract_code):
+    """Runs a series of checks on the contract code."""
+    print("Starting audit on the smart contract...")
+    issues = []
+
+    # Check for each type of vulnerability
+    overflow_issue = check_for_overflow(contract_code)
+    if overflow_issue:
+        issues.append(overflow_issue)
+
+    reentrancy_issue = check_for_reentrancy(contract_code)
+    if reentrancy_issue:
+        issues.append(reentrancy_issue)
+
+    access_issue = check_for_unauthorized_access(contract_code)
+    if access_issue:
+        issues.append(access_issue)
+
+    # Generate report
+    if issues:
+        print("\nAudit completed with issues found:")
+        for i, issue in enumerate(issues, 1):
+            print(f"{i}. {issue}")
+    else:
+        print("Audit completed. No issues found.")
+
+# Run the audit on the sample contract
+run_audit(smart_contract_code)
